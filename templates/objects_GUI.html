@@ -9,7 +9,7 @@
     <script src="../static/css/bootstrap.css"></script>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Highcharts Example</title>
+    <title>iRobot Controller</title>
 
     <style type="text/css">
         .highcharts-tooltip h3 {
@@ -19,10 +19,17 @@
 </head>
 
 <body>
-    <div id="container" style="height: 800px; margin: 0 auto"></div>
+    <div id='calibrate_text' class="alert alert-primary" role="alert"></div>
+    <div class="progress" id='distanceBar' style="height: 80px;">
+        <div class="progress-bar bg-warning" role="progressbar" style="width: 100%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">Distance: 100cm</div>
+    </div>
+    <div id="container_for_robot" onmousemove="getPos(event)" style="height: 800px; margin: 0"></div>
     <script type="text/javascript">
-
-        var chart = Highcharts.chart('container', {
+        var y = 0;
+        var x = 200;
+        var startTime = 0;
+        var endTime = 0;
+        var chart = Highcharts.chart('container_for_robot', {
 
             chart: {
                 type: 'bubble',
@@ -46,6 +53,8 @@
                 labels: {
                     format: '{value} cm'
                 },
+                min:0,
+                max:400
             },
 
             yAxis: {
@@ -58,6 +67,8 @@
                     format: '{value} cm'
                 },
                 maxPadding: 0.2,
+                min:0,
+                max:600
             },
 
             plotOptions: {
@@ -70,56 +81,100 @@
             },
 
             series: [{
+                name: 'Objects',
                 data:
-                    //{ x: 95, y: 95, name: 'Obj'},
-                    {{ data| safe }}
-            }]
+                    {{data|safe}},
+                   
+            },
+        {
+            name: 'Robot',
+                data: [{
+                    'x': x, 'y': 0,
+                    'z': 30,'name':'Robot'
+                }]
+        }
+            ]
         });
 
+ 
     </script>
-
     <!-- Button to calibrate -->
+
     <button id='calibrate' class="btn btn-danger" type="button" onclick="calibrate()">Calibrate</button>
-    <p id='calibrate_text'></p>
     <button id='up' class="btn btn-primary" type="button" onclick="up()">Up</button>
     <button id='down' class="btn btn-primary" type="button" onclick="down()">Down</button>
     <button id='stop' class="btn btn-primary" type="button" onclick="stop()">Stop</button>
-    <button id='right' class="btn btn-primary" type="button" onclick="">Right</button>
+    <button id='right' class="btn btn-primary" type="button" onclick="right()">Right</button>
+    <button id='right' class="btn btn-primary" type="button" onclick="left()">Left</button>
+    <button id='right' class="btn btn-primary" type="button" onclick="music()">Music</button>
+    
 
     <script>
+
+
+        var pressed = false;
         $(document).keydown(function (e) {
             //document.write(e.which);
             if (e.which == 87) {
                 up();
+                pressed = true;
             }
             if (e.which == 83) {
                 down();
+                pressed = true;
+            }
+            if (e.which == 65) {
+                left();
+                pressed = true;
+            }
+            if (e.which == 68) {
+                right();
+                pressed = true;
             }
             if (e.which == 76) {
                 calibrate();
             }
         });
 
-        $(document).keydown(function (e) {
+        $(document).keyup(function (e) {
             //document.write(e.which);
-            if (e.which == 87) {
-                stop();
-            }
-            if (e.which == 83) {
-                stop();
-            }
+            if(pressed == true){
+
+                if (e.which == 87) {
+                    stop();
+                }
+                if (e.which == 83) {
+                    stop();
+                }
+                if (e.which == 65) {
+                    stop();
+                }
+                if (e.which == 68) {
+                    stop();
+                }
+        }
         });
 
-        document.addEventListener("keyUp", function (e) {
-            stop();
-        });
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+          }
+
+        function moveBar(w){
+            var bar = document.getElementById('distanceBar');
+            bar.style = "width : "+ w + "%";
+            bar.textContent = w + " cm"
+        }
 
         function calibrate() {
             document.getElementById('calibrate_text').innerHTML = "Start calibration";
+            x = 100;
+            y = 0;
+            chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
             readData();
         }
+
         function readData() {
-            $.getJSON('/send_command', {
+            $.getJSON('/scan', {
                 prolang: $('input[name="prolang"]').val(),
             }, function (data) {
                 chart.series[0].setData(data);
@@ -130,6 +185,12 @@
             $.getJSON('/up', {
                 prolang: $('input[name="prolang"]').val(),
             }, function (data) {
+                //chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
+                //moveBar(data);
+                //sleep(1000);
+
+                $.each( data, function( key, val ) {
+                  });
 
             });
         }
@@ -138,6 +199,8 @@
             $.getJSON('/down', {
                 prolang: $('input[name="prolang"]').val(),
             }, function (data) {
+                //chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
+                //moveBar(data);
 
             });
         }
@@ -146,7 +209,16 @@
             $.getJSON('/stop', {
                 prolang: $('input[name="prolang"]').val(),
             }, function (data) {
-
+                $.each( data, function( key, val ) {
+                    if(key == 'moving'){
+                        y = y + val
+                        chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
+                    }else{
+                        moveBar(val);
+                    }
+                });
+                
+                
             });
         }
 
@@ -154,10 +226,40 @@
             $.getJSON('/right', {
                 prolang: $('input[name="prolang"]').val(),
             }, function (data) {
-
+                x = x;
+                chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
+                //moveBar(data);
             });
 
         }
+
+        function left() {
+            $.getJSON('/left', {
+                prolang: $('input[name="prolang"]').val(),
+            }, function (data) {
+                x = x;
+                chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
+                //moveBar(data);
+            });
+        }
+
+        function music() {
+            $.getJSON('/music', {
+                prolang: $('input[name="prolang"]').val(),
+            }, function (data) {
+                
+            });
+        }
+
+        function getPos(e){
+    		//x=e.clientX;
+    		//y=e.clientY;
+    		//cursor="Your Mouse Position Is : " + x + " and " + y ;
+            //document.getElementById("Y").innerHTML=cursor
+            e = chart.pointer.normalize(e);
+            $("#X").text(e.chartX - chart.plotLeft);
+            $("#Y").text(600 - (e.chartY - chart.plotTop));
+    	}
 
     </script>
 </body>
