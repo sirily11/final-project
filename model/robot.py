@@ -63,6 +63,7 @@ class Robot:
         self.distance = 0
         self.x_pos = 0
         self.y_pos = 0
+        self.angle = 0
         self.source = None
 
     def read_from_robots(self):
@@ -102,6 +103,11 @@ class Robot:
         if reply[2] == 'm':
             data = float(reply[3:-3])
             self.x_pos += data
+
+        if reply[2] == 'a':
+            data = float(reply[3:-3])
+            self.angle += data
+
         return reply
 
     def __reset_degree__(self):

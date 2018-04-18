@@ -27,8 +27,8 @@
     <script type="text/javascript">
         var y = 0;
         var x = 200;
-        var startTime = 0;
-        var endTime = 0;
+        var angle = Math.PI/2;
+        var distance = 0;
         var chart = Highcharts.chart('container_for_robot', {
 
             chart: {
@@ -53,8 +53,8 @@
                 labels: {
                     format: '{value} cm'
                 },
-                min:0,
-                max:400
+                min: 0,
+                max: 400
             },
 
             yAxis: {
@@ -67,8 +67,8 @@
                     format: '{value} cm'
                 },
                 maxPadding: 0.2,
-                min:0,
-                max:600
+                min: 0,
+                max: 600
             },
 
             plotOptions: {
@@ -83,20 +83,20 @@
             series: [{
                 name: 'Objects',
                 data:
-                    {{data|safe}},
+                    {{ data| safe }},
                    
             },
         {
             name: 'Robot',
                 data: [{
                     'x': x, 'y': 0,
-                    'z': 30,'name':'Robot'
+                    'z': 30, 'name': 'Robot'
                 }]
         }
             ]
         });
 
- 
+
     </script>
     <!-- Button to calibrate -->
 
@@ -107,11 +107,11 @@
     <button id='right' class="btn btn-primary" type="button" onclick="right()">Right</button>
     <button id='right' class="btn btn-primary" type="button" onclick="left()">Left</button>
     <button id='right' class="btn btn-primary" type="button" onclick="music()">Music</button>
-    
+    <p id="distance" class="text-primary">Distance: 0cm</p>
+    <p id="angle" class="text-danger">Angle: pi/2</p>
+    <p id="data"></p>
 
     <script>
-
-
         var pressed = false;
         $(document).keydown(function (e) {
             //document.write(e.which);
@@ -138,7 +138,7 @@
 
         $(document).keyup(function (e) {
             //document.write(e.which);
-            if(pressed == true){
+            if (pressed == true) {
 
                 if (e.which == 87) {
                     stop();
@@ -152,31 +152,27 @@
                 if (e.which == 68) {
                     stop();
                 }
-        }
+            }
         });
 
         function sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
-          }
+        }
 
-        function moveBar(w){
+        function moveBar(w) {
             var bar = document.getElementById('distanceBar');
-            bar.style = "width : "+ w + "%";
+            bar.style = "width : " + w + "%";
             bar.textContent = w + " cm"
         }
 
         function calibrate() {
             document.getElementById('calibrate_text').innerHTML = "Start calibration";
-            x = 100;
-            y = 0;
-            chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
             readData();
         }
 
         function readData() {
-            $.getJSON('/scan', {
-                prolang: $('input[name="prolang"]').val(),
-            }, function (data) {
+            $.getJSON("scan",
+            function (data) {
                 chart.series[0].setData(data);
             });
         }
@@ -185,13 +181,6 @@
             $.getJSON('/up', {
                 prolang: $('input[name="prolang"]').val(),
             }, function (data) {
-                //chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
-                //moveBar(data);
-                //sleep(1000);
-
-                $.each( data, function( key, val ) {
-                  });
-
             });
         }
 
@@ -209,16 +198,27 @@
             $.getJSON('/stop', {
                 prolang: $('input[name="prolang"]').val(),
             }, function (data) {
-                $.each( data, function( key, val ) {
-                    if(key == 'moving'){
-                        y = y + val
-                        chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
-                    }else{
+                $.each(data, function (key, val) {
+                    if (key == 'moving') {
+                        distance = val;
+                        
+                    }
+                    else if (key == "angle") {
+                        angle = angle + val;
+                        
+                    } 
+                    else if(key == "distance"){
                         moveBar(val);
                     }
                 });
-                
-                
+                x = x + distance * Math.cos(angle);
+                y = y + distance * Math.sin(angle);
+                document.getElementById('data').innerHTML = "X +-" + distance*Math.cos(angle)+
+                                                            " Y +-" + distance*Math.sin(angle);
+                document.getElementById('distance').innerHTML = "Distance: " + y + "cm";
+                document.getElementById('angle').innerHTML = "Angle: " + angle + " degrees";
+                chart.series[1].setData([{ 'x': x, 'y': y, 'z': 30 }]);
+
             });
         }
 
@@ -226,8 +226,6 @@
             $.getJSON('/right', {
                 prolang: $('input[name="prolang"]').val(),
             }, function (data) {
-                x = x;
-                chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
                 //moveBar(data);
             });
 
@@ -237,8 +235,6 @@
             $.getJSON('/left', {
                 prolang: $('input[name="prolang"]').val(),
             }, function (data) {
-                x = x;
-                chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
                 //moveBar(data);
             });
         }
@@ -247,19 +243,19 @@
             $.getJSON('/music', {
                 prolang: $('input[name="prolang"]').val(),
             }, function (data) {
-                
+
             });
         }
 
-        function getPos(e){
-    		//x=e.clientX;
-    		//y=e.clientY;
-    		//cursor="Your Mouse Position Is : " + x + " and " + y ;
+        function getPos(e) {
+            //x=e.clientX;
+            //y=e.clientY;
+            //cursor="Your Mouse Position Is : " + x + " and " + y ;
             //document.getElementById("Y").innerHTML=cursor
             e = chart.pointer.normalize(e);
             $("#X").text(e.chartX - chart.plotLeft);
             $("#Y").text(600 - (e.chartY - chart.plotTop));
-    	}
+        }
 
     </script>
 </body>
