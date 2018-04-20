@@ -1,4 +1,4 @@
-from flask import Flask, render_template,request
+from flask import Flask, render_template, request
 from model.data import randomNumberGenerator, readData, r_to_degrees
 from model.robot import Robot
 import ps4Controller
@@ -7,12 +7,16 @@ import time
 import threading
 import pprint
 import asyncio
-from math import cos, sin,radians
+from math import cos, sin, radians
 app = Flask(__name__)
 global x
 global y
+import math
 
 
+# controller = ps4Controller.PS4Controller()
+# thread = threading.Thread(target=controller.listen)
+# thread.start()
 
 @app.route('/')
 @app.route('/home')
@@ -22,13 +26,13 @@ def home():
     This will auto generate the data for display usage.\n
     """
 
-
     xAxis = {'title': "X"}
     yAxis = {'title': 'Y'}
     data = randomNumberGenerator()
+
     chart_title = "iRobot"
     return render_template('header.html', chart_title=chart_title, xAxis=xAxis,
-                           yAxis=yAxis, data=data)
+                           yAxis=yAxis, data=0)
 
 
 @app.route('/scan')
@@ -40,24 +44,28 @@ def send_command():
     Returns:
         The data of the objects which robot gets.
     """
+    data = {}
     try:
-        x = account = request.args.get('x')
-        y = account = request.args.get('y')
         robot = Robot()
         robot.send_command('look around')
+        robot.read_from_robots()
+        robot.read_from_robots()
+        robot.read_from_robots()
+        x = robot.x_pos
+        y = robot.y_pos
         done = robot.read_from_robots()
         while done is not True:
             done = robot.read_from_robots()
             # wait for done
-        robot.send_command('stop')
-        data = listObjects(robot,x,y)
-        # robot.move_to_smallest_obj()
-        return json.dumps(data)
+        data = listObjects(robot, x, y)
+    # robot.move_to_smallest_obj()
     except Exception as e:
-        pass
+        print(e)
+    return json.dumps(data)
     # thread = threading.Thread(target=robot.read_from_robots)
     # thread.start()
-    
+
+
 @app.route('/raw_data')
 def get_raw_data():
     ir = []
@@ -71,9 +79,9 @@ def get_raw_data():
             done = robot.read_from_robots()
 
         ir_data = robot.ir_sensor_data
-        ir_degress = r_to_degrees(robot.ir_sensor_degrees)
+        ir_degress = r_to_degrees(robot.ir_sensor_radians)
         pin_data = robot.pin_sensor_data
-        pin_degress = r_to_degrees(robot.pin_sensor_degrees)
+        pin_degress = r_to_degrees(robot.pin_sensor_radians)
 
         for i, d in enumerate(ir_data):
             ir.append([ir_degress[i], d])
@@ -83,8 +91,9 @@ def get_raw_data():
 
         # Dict of ir data and ping data
         data = {'pin': pin, 'ir': ir}
+        print(data)
     except Exception as e:
-        pass
+        print(e)
     return json.dumps(data)
 
 
@@ -111,15 +120,14 @@ def down():
 def stop():
     robot = Robot()
     robot.send_command('stop')
-    time.sleep(0.05)
-    robot.read_from_robots()
-    robot.read_from_robots()
-    robot.read_from_robots()
+    time.sleep(0.1)
+    for i in range(5):
+        robot.read_from_robots()
     # Data from robot
-    moving_distance = robot.x_pos
-    distance = robot.distance
-    angle = round(radians(robot.angle),4)
-    data = {"moving": moving_distance/10,"angle": angle,"distance":distance}
+    print("IR data: {} {}".format(robot.calculate_the_distance(selection="use",ir_data=robot.ir_data),robot.ir_data))
+    obj = listObjectWhileMoving(robot.distance, robot.x_pos,
+                                robot.y_pos, robot.angle)
+    data = {"x": robot.x_pos, "y": robot.y_pos, "angle": robot.angle,'obj' : obj,'distance':robot.distance}
     pprint.pprint(data)
     return json.dumps(data)
 
@@ -148,17 +156,34 @@ def music():
     return json.dumps(data)
 
 
+@app.route('/reset_pos')
+def reset_pos():
+
+    robot = Robot()
+    robot.send_command('reset')
+    print("Reset")
+    data = {"1": 1}
+    return json.dumps(data)
+
+@app.route('/machine_learning')
+def machine_learning():
+     robot = Robot()
+     robot.calibration()
+     return "Done"
+
 def ping():
     robot = Robot()
     robot.send_command('ping')
 
 
-def listObjects(r,add_x=0,add_y=0):
+def listObjects(r, add_x=0, add_y=0):
     """
     read the objects from robot.
     Arguments:
         r {[list of dict]} -- [list of the objects dict]
     """
+    add_x = add_x + 15
+    add_y = add_y + 15
     l = []
     #l.append({'x': 100, 'y': 0, 'z': 32, 'name': 'robot'})
     for i, obj in enumerate(r.objects):
@@ -169,10 +194,15 @@ def listObjects(r,add_x=0,add_y=0):
     return l
 
 
+def listObjectWhileMoving(distance, x, y, angle):
+    x = round(math.cos(math.radians(angle))*distance + x,2)
+    y = round(math.sin(math.radians(angle))*distance + y,2)
+    if(distance < 50):
+        return {'x' : x , 'y' : y, 'z' : 3, 'name' : 'obj'}
+    else:
+        return {}
+
 
 if __name__ == '__main__':
-    controller = ps4Controller.PS4Controller()
-    controller.listen()
+
     app.run(port=8080, debug=True)
-    
-    

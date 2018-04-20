@@ -26,11 +26,12 @@
     <div id="container_for_robot" onmousemove="getPos(event)" style="height: 800px; margin: 0"></div>
     <script type="text/javascript">
         var y = 0;
-        var x = 200;
+        var x = 0;
         var angle = Math.PI/2;
         var distance = 0;
-        var chart = Highcharts.chart('container_for_robot', {
+        var obj = [];
 
+        var chart = Highcharts.chart('container_for_robot', {
             chart: {
                 type: 'bubble',
                 plotBorderWidth: 2,
@@ -53,8 +54,8 @@
                 labels: {
                     format: '{value} cm'
                 },
-                min: 0,
-                max: 400
+                min: -100,
+                max: 200
             },
 
             yAxis: {
@@ -67,8 +68,8 @@
                     format: '{value} cm'
                 },
                 maxPadding: 0.2,
-                min: 0,
-                max: 600
+                min: -100,
+                max: 400
             },
 
             plotOptions: {
@@ -91,10 +92,13 @@
                 data: [{
                     'x': x, 'y': 0,
                     'z': 30, 'name': 'Robot'
-                }]
+                }],
+
         }
             ]
         });
+
+       
 
 
     </script>
@@ -107,6 +111,7 @@
     <button id='right' class="btn btn-primary" type="button" onclick="right()">Right</button>
     <button id='right' class="btn btn-primary" type="button" onclick="left()">Left</button>
     <button id='right' class="btn btn-primary" type="button" onclick="music()">Music</button>
+    <button id='machine_learning' class="btn btn-primary" type="button" onclick="machine_learning()">Machine Learning</button>
     <p id="distance" class="text-primary">Distance: 0cm</p>
     <p id="angle" class="text-danger">Angle: pi/2</p>
     <p id="data"></p>
@@ -119,6 +124,12 @@
                 up();
                 pressed = true;
             }
+
+            if (e.which == 82) {
+                reset();
+                pressed = true;
+            }
+
             if (e.which == 83) {
                 down();
                 pressed = true;
@@ -131,8 +142,13 @@
                 right();
                 pressed = true;
             }
+
             if (e.which == 76) {
+                if(pressed == false){
                 calibrate();
+                stop();
+                pressed = true;
+            }
             }
         });
 
@@ -142,15 +158,22 @@
 
                 if (e.which == 87) {
                     stop();
+                    pressed = false;
                 }
                 if (e.which == 83) {
                     stop();
+                    pressed = false;
                 }
                 if (e.which == 65) {
                     stop();
+                    pressed = false;
                 }
                 if (e.which == 68) {
                     stop();
+                    pressed = false;
+                }
+                if (e.which == 76) {
+                    pressed = false;
                 }
             }
         });
@@ -171,9 +194,10 @@
         }
 
         function readData() {
-            $.getJSON("scan",
+            $.getJSON("/scan",
             function (data) {
                 chart.series[0].setData(data);
+                document.getElementById('calibrate_text').innerHTML = "Finished calibration";
             });
         }
 
@@ -199,24 +223,31 @@
                 prolang: $('input[name="prolang"]').val(),
             }, function (data) {
                 $.each(data, function (key, val) {
-                    if (key == 'moving') {
-                        distance = val;
+                    if (key == 'y') {
+                        y = val;
                         
                     }
-                    else if (key == "angle") {
-                        angle = angle + val;
+                    else if (key == "x") {
+                        x = val;
                         
                     } 
                     else if(key == "distance"){
                         moveBar(val);
                     }
+                    else if(key == "angle"){
+                        document.getElementById('angle').innerHTML = "Angle: " + val + " degrees"; 
+                    }
+                    else if(key == 'obj'){
+                        obj.push(val);
+                        console.log(obj);
+                        chart.series[0].setData(obj);
+                    }
                 });
-                x = x + distance * Math.cos(angle);
-                y = y + distance * Math.sin(angle);
-                document.getElementById('data').innerHTML = "X +-" + distance*Math.cos(angle)+
-                                                            " Y +-" + distance*Math.sin(angle);
+                //x = x + distance * Math.cos(angle);
+                //y = y + distance * Math.sin(angle);
+                document.getElementById('data').innerHTML = "X: " + x +"Y:"+y;
                 document.getElementById('distance').innerHTML = "Distance: " + y + "cm";
-                document.getElementById('angle').innerHTML = "Angle: " + angle + " degrees";
+                
                 chart.series[1].setData([{ 'x': x, 'y': y, 'z': 30 }]);
 
             });
@@ -255,6 +286,25 @@
             e = chart.pointer.normalize(e);
             $("#X").text(e.chartX - chart.plotLeft);
             $("#Y").text(600 - (e.chartY - chart.plotTop));
+        }
+
+        function reset() {
+            obj = [];
+            $.getJSON('/reset_pos', {
+                prolang: $('input[name="prolang"]').val(),
+            }, function (data) {
+
+            });
+        }
+        
+        function machine_learning(){
+            obj = [];
+            $.getJSON('/machine_learning', {
+                prolang: $('input[name="prolang"]').val(),
+            }, function (data) {
+
+            });
+
         }
 
     </script>

@@ -3,8 +3,9 @@ import os
 import pygame
 import time
 from flask import url_for
-from app import up,down,stop,left,right,ping
 
+import asyncio
+from pyautogui import keyDown,keyUp
 class PS4Controller(object):
     """Class representing the PS4 controller. Pretty straightforward functionality."""
 
@@ -22,6 +23,11 @@ class PS4Controller(object):
         pygame.joystick.init()
         self.controller = pygame.joystick.Joystick(0)
         self.controller.init()
+
+    def keypress(self,key):
+        keyDown(key)
+        time.sleep(0.1)
+        keyUp(key)
     
 
     def listen(self):
@@ -58,51 +64,53 @@ class PS4Controller(object):
                 #pprint.pprint(self.button_data)
                 try:
                     if self.axis_data[0] < -0.2:
-                        left()
-                        time.sleep(0.1)
+                        keyDown('a')
+                        time.sleep(0.05)
                         self.isRoutating = True
                     
                     elif self.axis_data[0] >0.2:
-                        right()
-                        time.sleep(0.1)
+                        keyDown('d')
+                        time.sleep(0.05)
                         self.isRoutating = True
 
                     else:
                         if self.isRoutating is True:
-                            stop()
+                            keyUp('a')
+                            keyUp('d')
+                            time.sleep(0.05)
                             self.isRoutating = False
 
 
                     if self.axis_data[4] > 0:
                         if self.isMoving == 1:
                             self.isMoving = 0
-                            stop()
-                            time.sleep(0.05)
+                            # keyUp('s')
                             continue
-                        down()
+                        keyDown('s')
                         self.isMoving = -1
         
                     elif self.axis_data[5] > 0:
                         if self.isMoving == -1:
                             self.isMoving = 0
-                            stop()
-                            time.sleep(0.05)
+                            # keyUp('w')
                             continue
-                        up()
+                        keyDown('w')
                         self.isMoving = 1
 
                     else:
                         if self.isMoving == 1 or self.isMoving == -1:
-                            stop()
                             self.isMoving = 0
+                        keyUp('w')
+                        keyUp('s')
+
                             
-                    #pprint.pprint(self.hat_data)
+                    # #pprint.pprint(self.hat_data)
                 except Exception as e:
                     #print(e)
                     pass
                 
 
 
-# if __name__ == "__main__":
-#     ps4 = PS4Controller()
-#     ps4.listen()
+if __name__ == "__main__":
+    ps4 = PS4Controller()
+    ps4.listen()

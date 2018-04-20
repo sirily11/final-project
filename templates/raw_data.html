@@ -19,7 +19,7 @@
         var chart2 = Highcharts.chart('container1', {
 
             chart: {
-                polar: true
+                type: 'area'
             },
 
             title: {
@@ -28,13 +28,13 @@
 
             pane: {
                 startAngle: 0,
-                endAngle: 360
+                endAngle: 180
             },
 
             xAxis: {
                 tickInterval: 45,
                 min: 0,
-                max: 360,
+                max: 180,
                 labels: {
                     formatter: function () {
                         return this.value + '°';
