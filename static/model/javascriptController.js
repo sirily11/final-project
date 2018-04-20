@@ -1,29 +1,35 @@
 var pressed = false;
-$(document).keydown(function (e) {
-    document.write(e.which);
+$(document).keydown(async function (e) {
+    //document.write(e.which);
     if (e.which == 87) {
-        up();
+        await up();
         pressed = true;
     }
+
     if (e.which == 82) {
-        up();
+        await reset();
         pressed = true;
     }
 
     if (e.which == 83) {
-        down();
+        await down();
         pressed = true;
     }
     if (e.which == 65) {
-        left();
+        await left();
         pressed = true;
     }
     if (e.which == 68) {
-        right();
+        await right();
         pressed = true;
     }
+
     if (e.which == 76) {
-        calibrate();
+        if (pressed == false) {
+            await calibrate();
+            await stop();
+            pressed = true;
+        }
     }
 });
 
@@ -33,15 +39,22 @@ $(document).keyup(function (e) {
 
         if (e.which == 87) {
             stop();
+            pressed = false;
         }
         if (e.which == 83) {
             stop();
+            pressed = false;
         }
         if (e.which == 65) {
             stop();
+            pressed = false;
         }
         if (e.which == 68) {
             stop();
+            pressed = false;
+        }
+        if (e.which == 76) {
+            pressed = false;
         }
     }
 });
@@ -62,10 +75,11 @@ function calibrate() {
 }
 
 function readData() {
-    $.getJSON("scan",
-    function (data) {
-        chart.series[0].setData(data);
-    });
+    $.getJSON("/scan",
+        function (data) {
+            chart.series[0].setData(data);
+            document.getElementById('calibrate_text').innerHTML = "Finished calibration";
+        });
 }
 
 function up() {
@@ -92,24 +106,29 @@ function stop() {
         $.each(data, function (key, val) {
             if (key == 'y') {
                 y = val;
-                
+
             }
             else if (key == "x") {
                 x = val;
-                
-            } 
-            else if(key == "distance"){
+
+            }
+            else if (key == "distance") {
                 moveBar(val);
             }
-            else if(key == "angle"){
-                document.getElementById('angle').innerHTML = "Angle: " + angle + " degrees";
+            else if (key == "angle") {
+                document.getElementById('angle').innerHTML = "Angle: " + val + " degrees";
+            }
+            else if (key == 'obj') {
+                obj.push(val);
+                console.log(obj);
+                chart.series[0].setData(obj);
             }
         });
         //x = x + distance * Math.cos(angle);
         //y = y + distance * Math.sin(angle);
-        document.getElementById('data').innerHTML = "X: " + x +"Y:"+y;
+        document.getElementById('data').innerHTML = "X: " + x + "Y:" + y;
         document.getElementById('distance').innerHTML = "Distance: " + y + "cm";
-        
+
         chart.series[1].setData([{ 'x': x, 'y': y, 'z': 30 }]);
 
     });
@@ -148,4 +167,23 @@ function getPos(e) {
     e = chart.pointer.normalize(e);
     $("#X").text(e.chartX - chart.plotLeft);
     $("#Y").text(600 - (e.chartY - chart.plotTop));
+}
+
+function reset() {
+    obj = [];
+    $.getJSON('/reset_pos', {
+        prolang: $('input[name="prolang"]').val(),
+    }, function (data) {
+
+    });
+}
+
+function machine_learning() {
+    obj = [];
+    $.getJSON('/machine_learning', {
+        prolang: $('input[name="prolang"]').val(),
+    }, function (data) {
+
+    });
+
 }

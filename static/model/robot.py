@@ -95,8 +95,8 @@ class Robot:
             self.ir_sensor_data.append(data)
             self.ir_degree += 2
             self.ir_sensor_radians.append(math.radians(self.ir_degree))
-            self.object_detection(data)
             self.ir_data = data
+            self.object_detection(self.calculate_the_distance(selection="use",ir_data=self.ir_data))
 
         #m stands for moving distance data
         if reply[2] == 'm':
@@ -270,10 +270,11 @@ class Robot:
         Arguments:
             ir_data {[type]} -- [description]
         """
-        
+        if ir_data > 100:
+            return
         try:
-            prev_ir_data = self.ir_sensor_data[len(self.ir_sensor_data) - 4]
-            if  ir_data - prev_ir_data> 300 and self.hasObject is False:
+            #prev_ir_data = self.ir_sensor_data[len(self.ir_sensor_data) - 4]
+            if  ir_data - self.pin_sensor_data[len(self.pin_sensor_data) - 1]< 10 and self.hasObject is False:
                 self.hasObject = True
                 self.obj_num = self.obj_num + 1
                 print("Object!")
@@ -281,7 +282,7 @@ class Robot:
                 self.start_edge = self.ir_sensor_radians[len(self.ir_sensor_radians) -1]
 
             #If there is a object in front of the robot, then save them into a objects list
-            if  prev_ir_data - ir_data > 300 and self.hasObject is True:
+            if  ir_data - self.pin_sensor_data[len(self.pin_sensor_data) - 1]> 10 and self.hasObject is True:
                 self.hasObject = False
                 self.end_edge = self.ir_sensor_radians[len(self.ir_sensor_radians) - 1]
                 angle = self.end_edge - self.start_edge

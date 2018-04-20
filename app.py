@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
-from model.data import randomNumberGenerator, readData, r_to_degrees
-from model.robot import Robot
+from static.model.data import randomNumberGenerator, readData, r_to_degrees
+from static.model.robot import Robot
 import ps4Controller
 import json
 import time
@@ -58,6 +58,7 @@ def send_command():
             done = robot.read_from_robots()
             # wait for done
         data = listObjects(robot, x, y)
+        time.sleep(0.4)
     # robot.move_to_smallest_obj()
     except Exception as e:
         print(e)
@@ -80,10 +81,13 @@ def get_raw_data():
 
         ir_data = robot.ir_sensor_data
         ir_degress = r_to_degrees(robot.ir_sensor_radians)
+        cal_ir_data = []
+        for i in ir_data:
+            cal_ir_data.append(robot.calculate_the_distance(selection="use",ir_data=i))
         pin_data = robot.pin_sensor_data
         pin_degress = r_to_degrees(robot.pin_sensor_radians)
 
-        for i, d in enumerate(ir_data):
+        for i, d in enumerate(cal_ir_data):
             ir.append([ir_degress[i], d])
 
         for i, d in enumerate(pin_data):
@@ -125,7 +129,8 @@ def stop():
         robot.read_from_robots()
     # Data from robot
     print("IR data: {} {}".format(robot.calculate_the_distance(selection="use",ir_data=robot.ir_data),robot.ir_data))
-    obj = listObjectWhileMoving(robot.distance, robot.x_pos,
+    obj = listObjectWhileMoving(robot.calculate_the_distance(selection="use",ir_data=robot.ir_data), 
+                                robot.x_pos,
                                 robot.y_pos, robot.angle)
     data = {"x": robot.x_pos, "y": robot.y_pos, "angle": robot.angle,'obj' : obj,'distance':robot.distance}
     pprint.pprint(data)

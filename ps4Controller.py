@@ -2,8 +2,6 @@ import os
 #import pprint
 import pygame
 import time
-from flask import url_for
-
 import asyncio
 from pyautogui import keyDown,keyUp
 class PS4Controller(object):
