@@ -1,9 +1,69 @@
-var pressed = false;
+function newFunction() {
+    {
+        "plugins";
+        ["jsdom-quokka-plugin"];
+    }
+}
+
+function right() {
+    $.getJSON('/right', {
+        prolang: $('input[name="prolang"]').val(),
+    }, function (data) {
+        //moveBar(data);
+    });
+
+}
+
+function left() {
+    $.getJSON('/left', {
+        prolang: $('input[name="prolang"]').val(),
+    }, function (data) {
+        //moveBar(data);
+    });
+}
+
+function music() {
+    $.getJSON('/music', {
+        prolang: $('input[name="prolang"]').val(),
+    }, function (data) {
+
+    });
+}
+
+function getPos(e) {
+    //x=e.clientX;
+    //y=e.clientY;
+    //cursor="Your Mouse Position Is : " + x + " and " + y ;
+    //document.getElementById("Y").innerHTML=cursor
+    e = chart.pointer.normalize(e);
+    $("#X").text(e.chartX - chart.plotLeft);
+    $("#Y").text(600 - (e.chartY - chart.plotTop));
+}
+
+async function reset() {
+    obj = [];
+    $.getJSON('/reset_pos', {
+        prolang: $('input[name="prolang"]').val(),
+    }, function (data) {
+
+    });
+}
+
+function machine_learning() {
+    obj = [];
+    $.getJSON('/machine_learning', {
+        prolang: $('input[name="prolang"]').val(),
+    }, function (data) {
+
+    });
+
+}
 $(document).keydown(async function (e) {
     //document.write(e.which);
     if (e.which == 87) {
-        await up();
+        up();
         pressed = true;
+        console.log("UP been pressed");
     }
 
     if (e.which == 82) {
@@ -27,30 +87,30 @@ $(document).keydown(async function (e) {
     if (e.which == 76) {
         if (pressed == false) {
             await calibrate();
-            await stop();
             pressed = true;
         }
     }
 });
 
-$(document).keyup(function (e) {
+$(document).keyup(async function (e) {
     //document.write(e.which);
     if (pressed == true) {
 
         if (e.which == 87) {
-            stop();
+            await stop();
+            console.log("UP been released");
             pressed = false;
         }
         if (e.which == 83) {
-            stop();
+            await stop();
             pressed = false;
         }
         if (e.which == 65) {
-            stop();
+            await stop();
             pressed = false;
         }
         if (e.which == 68) {
-            stop();
+            await stop();
             pressed = false;
         }
         if (e.which == 76) {
@@ -69,12 +129,12 @@ function moveBar(w) {
     bar.textContent = w + " cm"
 }
 
-function calibrate() {
+async function calibrate() {
     document.getElementById('calibrate_text').innerHTML = "Start calibration";
-    readData();
+    await readData();
 }
 
-function readData() {
+async function readData() {
     $.getJSON("/scan",
         function (data) {
             chart.series[0].setData(data);
@@ -83,16 +143,15 @@ function readData() {
 }
 
 function up() {
-    $.getJSON('/up', {
-        prolang: $('input[name="prolang"]').val(),
-    }, function (data) {
+    $.getJSON('/up',
+    function (data) {
     });
+    
 }
 
 function down() {
-    $.getJSON('/down', {
-        prolang: $('input[name="prolang"]').val(),
-    }, function (data) {
+    $.getJSON('/down'
+    , function (data) {
         //chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
         //moveBar(data);
 
@@ -132,58 +191,4 @@ function stop() {
         chart.series[1].setData([{ 'x': x, 'y': y, 'z': 30 }]);
 
     });
-}
-
-function right() {
-    $.getJSON('/right', {
-        prolang: $('input[name="prolang"]').val(),
-    }, function (data) {
-        //moveBar(data);
-    });
-
-}
-
-function left() {
-    $.getJSON('/left', {
-        prolang: $('input[name="prolang"]').val(),
-    }, function (data) {
-        //moveBar(data);
-    });
-}
-
-function music() {
-    $.getJSON('/music', {
-        prolang: $('input[name="prolang"]').val(),
-    }, function (data) {
-
-    });
-}
-
-function getPos(e) {
-    //x=e.clientX;
-    //y=e.clientY;
-    //cursor="Your Mouse Position Is : " + x + " and " + y ;
-    //document.getElementById("Y").innerHTML=cursor
-    e = chart.pointer.normalize(e);
-    $("#X").text(e.chartX - chart.plotLeft);
-    $("#Y").text(600 - (e.chartY - chart.plotTop));
-}
-
-function reset() {
-    obj = [];
-    $.getJSON('/reset_pos', {
-        prolang: $('input[name="prolang"]').val(),
-    }, function (data) {
-
-    });
-}
-
-function machine_learning() {
-    obj = [];
-    $.getJSON('/machine_learning', {
-        prolang: $('input[name="prolang"]').val(),
-    }, function (data) {
-
-    });
-
 }

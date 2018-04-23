@@ -44,27 +44,39 @@ def send_command():
     Returns:
         The data of the objects which robot gets.
     """
-    data = {}
-    try:
-        robot = Robot()
-        robot.send_command('look around')
-        robot.read_from_robots()
-        robot.read_from_robots()
-        robot.read_from_robots()
-        x = robot.x_pos
-        y = robot.y_pos
-        done = robot.read_from_robots()
-        while done is not True:
-            done = robot.read_from_robots()
-            # wait for done
-        data = listObjects(robot, x, y)
-        time.sleep(0.4)
-    # robot.move_to_smallest_obj()
-    except Exception as e:
-        print(e)
-    return json.dumps(data)
+    # data = {}
+    # try:
+    #     robot = Robot()
+    #     robot.send_command('look around')
+
+    #     done = robot.read_from_robots()
+    #     while done is not True:
+    #         done = robot.read_from_robots()
+    #         # wait for done
+    #     data = listObjects(robot, x, y)
+        
+    # # robot.move_to_smallest_obj()
+    # except Exception as e:
+    #     print(e)
+    # return json.dumps(data)
     # thread = threading.Thread(target=robot.read_from_robots)
     # thread.start()
+    ir = []
+    pin = []
+    data = {}
+    robot = Robot()
+    robot.send_command('look around')
+    done = robot.read_from_robots()
+    while done is not True:
+        done = robot.read_from_robots()
+    print(len(robot.objects))
+    robot.send_command("stop")
+    x = robot.x_pos
+    y = robot.y_pos
+    data = listObjects(robot, x, y,robot.angle)
+
+    # Dict of ir data and ping data
+    return json.dumps(data)
 
 
 @app.route('/raw_data')
@@ -78,7 +90,7 @@ def get_raw_data():
         done = robot.read_from_robots()
         while done is not True:
             done = robot.read_from_robots()
-
+        print("Getting the raw data")
         ir_data = robot.ir_sensor_data
         ir_degress = r_to_degrees(robot.ir_sensor_radians)
         cal_ir_data = []
@@ -86,12 +98,13 @@ def get_raw_data():
             cal_ir_data.append(robot.calculate_the_distance(selection="use",ir_data=i))
         pin_data = robot.pin_sensor_data
         pin_degress = r_to_degrees(robot.pin_sensor_radians)
-
+        robot.send_command("stop")
         for i, d in enumerate(cal_ir_data):
             ir.append([ir_degress[i], d])
 
         for i, d in enumerate(pin_data):
             pin.append([pin_degress[i], d])
+
 
         # Dict of ir data and ping data
         data = {'pin': pin, 'ir': ir}
@@ -132,7 +145,8 @@ def stop():
     obj = listObjectWhileMoving(robot.calculate_the_distance(selection="use",ir_data=robot.ir_data), 
                                 robot.x_pos,
                                 robot.y_pos, robot.angle)
-    data = {"x": robot.x_pos, "y": robot.y_pos, "angle": robot.angle,'obj' : obj,'distance':robot.distance}
+    #cancel the print object while moving
+    data = {"x": robot.x_pos, "y": robot.y_pos, "angle": robot.angle,'distance':robot.distance}
     pprint.pprint(data)
     return json.dumps(data)
 
@@ -181,18 +195,16 @@ def ping():
     robot.send_command('ping')
 
 
-def listObjects(r, add_x=0, add_y=0):
+def listObjects(r, add_x=0, add_y=0,angle=0):
     """
     read the objects from robot.
     Arguments:
         r {[list of dict]} -- [list of the objects dict]
     """
-    add_x = add_x + 15
-    add_y = add_y + 15
     l = []
     #l.append({'x': 100, 'y': 0, 'z': 32, 'name': 'robot'})
     for i, obj in enumerate(r.objects):
-        pos = obj.calculate_the_x_y_pos()
+        pos = obj.calculate_the_x_y_pos(angle,add_x,add_y)
         l.append({'x': pos[0] + add_x, 'y': pos[1]+add_y,
                   'z': obj.calculate_width(),
                   'name': 'obj{}'.format(i)})
