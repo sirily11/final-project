@@ -102,13 +102,14 @@ class PS4Controller(object):
                         keyUp('s')
 
                             
-                    # #pprint.pprint(self.hat_data)
+                    if self.hat_data[0][1] == -1:
+                        KeyUp('e')
                 except Exception as e:
-                    #print(e)
+                    print(e)
                     pass
                 
 
 
-if __name__ == "__main__":
-    ps4 = PS4Controller()
-    ps4.listen()
+# if __name__ == "__main__":
+#     ps4 = PS4Controller()
+#     ps4.listen()

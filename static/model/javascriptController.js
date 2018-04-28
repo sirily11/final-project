@@ -26,7 +26,7 @@ function music() {
     $.getJSON('/music', {
         prolang: $('input[name="prolang"]').val(),
     }, function (data) {
-
+        
     });
 }
 
@@ -58,62 +58,70 @@ function machine_learning() {
     });
 
 }
-$(document).keydown(async function (e) {
+$(document).keydown(function (e) {
     //document.write(e.which);
+    var pressed = false;
     if (e.which == 87) {
         up();
         pressed = true;
-        console.log("UP been pressed");
     }
 
-    if (e.which == 82) {
-        await reset();
+    else if (e.which == 82) {
+        reset();
         pressed = true;
+        stop()
     }
 
-    if (e.which == 83) {
-        await down();
+    else if (e.which == 83) {
+        down();
         pressed = true;
+        stop()
     }
-    if (e.which == 65) {
-        await left();
+    else if (e.which == 65) {
+        left();
         pressed = true;
+        stop()
     }
-    if (e.which == 68) {
-        await right();
+    else if (e.which == 68) {
+        right();
         pressed = true;
+        stop()
     }
 
-    if (e.which == 76) {
+    else if (e.which == 76) {
         if (pressed == false) {
             await calibrate();
             pressed = true;
         }
     }
+    else{
+        stop()
+    }
 });
 
-$(document).keyup(async function (e) {
+$(document).keyup(function (e) {
     //document.write(e.which);
     if (pressed == true) {
 
         if (e.which == 87) {
-            await stop();
+            stop();
             console.log("UP been released");
             pressed = false;
         }
         if (e.which == 83) {
-            await stop();
+            stop();
             pressed = false;
         }
         if (e.which == 65) {
-            await stop();
+            stop();
             pressed = false;
         }
         if (e.which == 68) {
-            await stop();
+            stop();
             pressed = false;
         }
         if (e.which == 76) {
+            stop();
             pressed = false;
         }
     }
@@ -131,31 +139,36 @@ function moveBar(w) {
 
 async function calibrate() {
     document.getElementById('calibrate_text').innerHTML = "Start calibration";
-    await readData();
+    readData();
 }
 
-async function readData() {
+function readData() {
     $.getJSON("/scan",
         function (data) {
-            chart.series[0].setData(data);
-            document.getElementById('calibrate_text').innerHTML = "Finished calibration";
-        });
+            obj.push(data);
+            chart.series[0].setData(obj);
+            var length = data.length;
+            
+            document.getElementById('calibrate_text').innerHTML = "Finished calibration.";
+            document.getElementById("object").innerHTML = data;
+            console.log("Data");
+        })
 }
 
 function up() {
     $.getJSON('/up',
-    function (data) {
-    });
-    
+        function (data) {
+        });
+
 }
 
 function down() {
     $.getJSON('/down'
-    , function (data) {
-        //chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
-        //moveBar(data);
+        , function (data) {
+            //chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
+            //moveBar(data);
 
-    });
+        });
 }
 
 function stop() {
@@ -187,7 +200,7 @@ function stop() {
         //y = y + distance * Math.sin(angle);
         document.getElementById('data').innerHTML = "X: " + x + "Y:" + y;
         document.getElementById('distance').innerHTML = "Distance: " + y + "cm";
-
+        chart.series[0].setData(obj);
         chart.series[1].setData([{ 'x': x, 'y': y, 'z': 30 }]);
 
     });

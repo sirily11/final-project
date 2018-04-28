@@ -23,15 +23,14 @@
     <div class="progress" id='distanceBar' style="height: 80px;">
         <div class="progress-bar bg-warning" role="progressbar" style="width: 100%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">Distance: 100cm</div>
     </div>
-    <div id="container_for_robot" style="height: 800px; margin: 0"></div>
+    <div id="container_for_robot" onmousemove="getPos(event)" style="height: 800px; margin: 0"></div>
     <script type="text/javascript">
         var y = 0;
         var x = 0;
-        var angle = Math.PI/2;
-        var distance = 0;
-        var obj = [];
-
+        var startTime = 0;
+        var endTime = 0;
         var chart = Highcharts.chart('container_for_robot', {
+
             chart: {
                 type: 'bubble',
                 plotBorderWidth: 2,
@@ -54,8 +53,8 @@
                 labels: {
                     format: '{value} cm'
                 },
-                min: -100,
-                max: 200
+                min:-400,
+                max:400
             },
 
             yAxis: {
@@ -68,8 +67,8 @@
                     format: '{value} cm'
                 },
                 maxPadding: 0.2,
-                min: -100,
-                max: 400
+                min:-600,
+                max:600
             },
 
             plotOptions: {
@@ -84,23 +83,20 @@
             series: [{
                 name: 'Objects',
                 data:
-                    {{ data| safe }},
+                    {{data|safe}},
                    
             },
         {
             name: 'Robot',
                 data: [{
                     'x': x, 'y': 0,
-                    'z': 30, 'name': 'Robot'
-                }],
-
+                    'z': 30,'name':'Robot'
+                }]
         }
             ]
         });
 
-       
-
-
+ 
     </script>
     <!-- Button to calibrate -->
 
@@ -111,13 +107,184 @@
     <button id='right' class="btn btn-primary" type="button" onclick="right()">Right</button>
     <button id='right' class="btn btn-primary" type="button" onclick="left()">Left</button>
     <button id='right' class="btn btn-primary" type="button" onclick="music()">Music</button>
-    <button id='machine_learning' class="btn btn-primary" type="button" onclick="machine_learning()">Machine Learning</button>
-    <p id="distance" class="text-primary">Distance: 0cm</p>
-    <p id="angle" class="text-danger">Angle: pi/2</p>
-    <p id="data"></p>
+    <button id='right' class="btn btn-primary" type="button" onclick="auto()">Auto</button>
 
-    <script src="{{url_for('static',filename='model/javascriptController.js')}}">
-    
+    <script>
+
+
+        var pressed = false;
+        $(document).keydown(function (e) {
+            //document.write(e.which);
+            if (e.which == 87) {
+                up();
+                pressed = true;
+            }
+            if (e.which == 83) {
+                down();
+                pressed = true;
+            }
+            if (e.which == 65) {
+                left();
+                pressed = true;
+            }
+            if (e.which == 68) {
+                right();
+                pressed = true;
+            }
+            if (e.which == 76) {
+                calibrate();
+            }
+        });
+
+        $(document).keyup(function (e) {
+            //document.write(e.which);
+            if(pressed == true){
+
+                if (e.which == 87) {
+                    stop();
+                    pressed = false
+                }
+                if (e.which == 83) {
+                    stop();
+                    pressed = false
+                }
+                if (e.which == 65) {
+                    stop();
+                    pressed = false
+                }
+                if (e.which == 68) {
+                    stop();
+                    pressed = false
+                }
+        }
+        });
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+          }
+
+        function moveBar(w){
+            var bar = document.getElementById('distanceBar');
+            bar.style = "width : "+ w + "%";
+            bar.textContent = w + " cm"
+        }
+
+        function calibrate() {
+            document.getElementById('calibrate_text').innerHTML = "Start calibration";
+            x = 100;
+            y = 0;
+            chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
+            readData();
+        }
+
+        function readData() {
+            $.getJSON('/scan', {
+                prolang: $('input[name="prolang"]').val(),
+            }, function (data) {
+                chart.series[0].setData(data);
+            });
+        }
+
+        function up() {
+            $.getJSON('/up', {
+                prolang: $('input[name="prolang"]').val(),
+            }, function (data) {
+                //chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
+                //moveBar(data);
+                //sleep(1000);
+
+                $.each( data, function( key, val ) {
+                  });
+
+            });
+        }
+
+        function down() {
+            $.getJSON('/down', {
+                prolang: $('input[name="prolang"]').val(),
+            }, function (data) {
+                //chart.series[1].setData([{'x': x, 'y': y,'z': 30}]);
+                //moveBar(data);
+
+            });
+        }
+        function stop() {
+            if(pressed == true){
+            $.getJSON('/stop', {
+                prolang: $('input[name="prolang"]').val(),
+            }, function (data) {
+                $.each(data, function (key, val) {
+                    if (key == 'y') {
+                        y = val;
+                      
+        
+                    }
+                    else if (key == "x") {
+                        x = val;
+                        //x = x + 3
+        
+                    }
+                    else if (key == "distance") {
+                        //moveBar(val);
+                    }
+                    else if (key == "angle") {
+                    
+                    }
+                    else if (key == 'obj') {
+                    }
+                });
+                //x = x + distance * Math.cos(angle);
+                //y = y + distance * Math.sin(angle);
+                chart.series[1].setData([{ 'x': x, 'y': y, 'z': 30 }]);
+            });
+        }
+            
+        }
+
+        function right() {
+            $.getJSON('/right', {
+                prolang: $('input[name="prolang"]').val(),
+            }, function (data) {
+                
+                //moveBar(data);
+            });
+
+        }
+
+        function left() {
+            $.getJSON('/left', {
+                prolang: $('input[name="prolang"]').val(),
+            }, function (data) {
+               
+                //moveBar(data);
+            });
+        }
+
+        function music() {
+            $.getJSON('/music', {
+                prolang: $('input[name="prolang"]').val(),
+            }, function (data) {
+                
+            });
+        }
+
+        function getPos(e){
+    		//x=e.clientX;
+    		//y=e.clientY;
+    		//cursor="Your Mouse Position Is : " + x + " and " + y ;
+            //document.getElementById("Y").innerHTML=cursor
+            e = chart.pointer.normalize(e);
+            $("#X").text(e.chartX - chart.plotLeft);
+            $("#Y").text(600 - (e.chartY - chart.plotTop));
+        }
+        function auto(){
+            $.getJSON('/auto', {
+                prolang: $('input[name="prolang"]').val(),
+            }, function (data) {
+                
+            });
+        }
+
     </script>
 </body>
 

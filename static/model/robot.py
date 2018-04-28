@@ -14,6 +14,7 @@ import time
 import keras
 
 
+
 class Robot:
     def __init__(self, baudrate=115200):
         # Setting the connection
@@ -71,18 +72,19 @@ class Robot:
         self.angle = 0
         self.source = None
 
+
     def read_from_robots(self):
-        # 24cm is 1314
+        """[summary]
+        Read the data from robot and then return the data
+        Returns:
+            [type] -- [description]
+        """
+
         reply = str(self.serial.readline())
 
         if reply[2] == 'd':
             print("Object number is " + str(len(self.objects)))
             self.obj_num = 0
-            # with open('data24.json', 'w') as f:
-            #     data = {'Pin_sensor': self.pin_sensor_data, 'Pin_degrees': self.pin_sensor_radians,
-            #             'Ir_sensor': self.ir_sensor_data, 'Ir_degrees': self.ir_sensor_radians}
-            #     f.write(json.dumps(data))
-            #     f.close()
             self.object_detection(self.ir_sensor_data,self.pin_sensor_data)
             return True
 
@@ -143,26 +145,6 @@ class Robot:
         """
         if selection == "train":
             try:
-
-                # x = np.reshape(self.ir_sensor_data, (-1, 1))
-                # y = np.reshape(self.pin_sensor_data, (-1, 1))
-                # print("Get data size : {} ".format(len(x)))
-                # print("Get all the data")
-                # # X_scaler = preprocessing.MinMaxScaler(feature_range=(0, 1))
-                # # y_scaler = preprocessing.MinMaxScaler(feature_range=(0, 1))
-                # print("transform the data")
-                # # x = X_scaler.fit_transform(x)
-                # # y = y_scaler.fit_transform(y)
-                # # print(x.shape,y.shape)
-                # # self.model.fit(x, y,epochs=200)
-                # self.model.fit(x,y.ravel())
-                # print("Finished training")
-                # if save == True:
-                #     if model_name is not None:
-                #         self.__saving_model__(model_name)
-                #     else:
-                #         self.__saving_model__()
-                # return self.model.predict(X_scaler.inverse_transform(x))
                 with open('ir_sensor_model', 'w') as f:
                     d = {'ir_data': self.ir_sensor_data,
                          'pin_data': self.pin_sensor_data}
@@ -172,15 +154,6 @@ class Robot:
                 print(e)
                 pass
         if selection == "use":
-            # if ir_data is None:
-            #     raise Exception("you need to have your ir data")
-            # try:
-            #     if model_name is not None:
-            #         self.__load_model__(model_name)
-            #     else:
-            #         self.__load_model__()
-            #     #ir_data = np.reshape(ir_data,(-1,1))
-            #     return self.model.predict(ir_data)
             with open('ir_sensor_model', 'r') as f:
                 d = f.read()
                 d = json.loads(d)
@@ -197,6 +170,11 @@ class Robot:
                 return pin[select] + (ir_data - ir[select])*unit
 
     def calibration(self):
+        """[summary]
+        Let the robot auto matically calibrate it's ir sensor
+        Based on the pin sensor data
+        """
+
         for i in range(30):
             self.send_command("backward")
             time.sleep(0.08)
@@ -209,6 +187,10 @@ class Robot:
         prediction = self.calculate_the_distance()
 
     def move_to_smallest_obj(self):
+        """[summary]
+        Move the servo to the smallest object
+        """
+
         try:
             angle = self.find_smallest_objets().degree
             angle = int(math.degrees(angle))
@@ -285,55 +267,35 @@ class Robot:
         Arguments:
             ir_data {[type]} -- [description]
         """
-        # if ir_data > 100:
-        #     return
-        print(len(self.ir_sensor_data))
-        #prev_ir_data = self.ir_sensor_data[len(self.ir_sensor_data) - 4]
-        # if  ir_data - self.pin_sensor_data[len(self.pin_sensor_data) - 1]< 18 and self.hasObject is False:
-        #     self.hasObject = True
-        #     self.obj_num = self.obj_num + 1
-        #     print("Object!")
-        #     #in radiens
-        #     self.start_edge = self.ir_sensor_radians[len(self.ir_sensor_radians) -1]
-
-        # #If there is a object in front of the robot, then save them into a objects list
-        # if  ir_data - self.pin_sensor_data[len(self.pin_sensor_data) - 1]> 18 and self.hasObject is True:
-        #     self.hasObject = False
-        #     self.end_edge = self.ir_sensor_radians[len(self.ir_sensor_radians) - 1]
-        #     distance = (self.pin_sensor_data[len(self.pin_sensor_data) - 3] +
-        #                 self.pin_sensor_data[len(self.pin_sensor_data) - 4])/2
-
-        #     obj = objs(starting_edge=self.start_edge,
-        #                              ending_edge=self.end_edge,distance=distance)
-        #     if obj.calculate_width() != 0:
-        #         self.objects.append(obj)
-
-        #     print("Width is {}".format(self.objects[len(self.objects) - 1].calculate_width()))
-        #     print()
-        self.model = self.__load_model__()
+        prev_d = 30
+        distance = 0
+        print("=========raw data=======")
+        for i,d in enumerate(self.pin_sensor_data):
+            print("{} {}        {}".format(2*i,self.ir_sensor_data[i], self.pin_sensor_data[i]))
+        
+        print("=========raw data=======")
         for i,d in enumerate(ir_data):
-            predict_value = np.array([ir_data[i],pin_data[i]])
-            predict_value = predict_value.reshape((1,2))
             #print("Prediction : {}".format(self.model.predict(predict_value)[0]))
-            if self.model.predict(predict_value)[0][1] >= 5.0e-05 and self.hasObject is False:
+            if  pin_data[i] < 60 and d - prev_d > 300  and self.hasObject is False:
                 self.hasObject = True
                 self.obj_num = self.obj_num + 1
                 print("Object!")
-                self.start_edge = self.ir_sensor_radians[len(
-                    self.ir_sensor_radians) - 1]
-            if  self.model.predict(predict_value)[0][1] < 3.0e-05 and self.hasObject is True:
-                self.hasObject = False
-                self.end_edge = self.ir_sensor_radians[i - 1]
+                self.start_edge = self.ir_sensor_radians[i]
                 distance = pin_data[i]
-
+            if  pin_data[i] > 60 and prev_d - d > 100 and self.hasObject is True:
+                self.hasObject = False
+                self.end_edge = self.ir_sensor_radians[i]
+                if distance == 0:
+                    continue
                 obj = objs(starting_edge=self.start_edge,
                         ending_edge=self.end_edge, distance=distance)
                 # if obj.calculate_width() != 0:
                 self.objects.append(obj)
-
-                # print("Width is {}".format(
-                #     self.objects[len(self.objects) - 1].calculate_width()))
-                # print()
+                print("Distance is {}".format(distance))
+                print("Width is {}".format(
+                    self.objects[len(self.objects) - 1].calculate_width()))
+                print()
+            prev_d = d
 
     def normalized_raw_data(self):
         returnData = []
@@ -359,6 +321,13 @@ class Robot:
         return model
 
     def find_smallest_objets(self):
+        """[summary]
+        This is the function which will find the 
+        smallest object in the object's list
+        Returns:
+            [type] -- [description]
+        """
+
         time.sleep(0.1)
         smallest_width = self.objects[0].calculate_width()
         smallest_index = 0
@@ -371,6 +340,14 @@ class Robot:
 
 
 class objs:
+    """[summary]
+    This class is for the object detection.
+    Each object which the robot detected will become an 
+    object's object
+    Returns:
+        [type] -- [description]
+    """
+
     def __init__(self, starting_edge, ending_edge, distance):
         self.starting_edge = starting_edge
         self.ending_edge = ending_edge
@@ -378,36 +355,47 @@ class objs:
         self.distance = distance
         # calculate the center degree
         self.angle = starting_edge + (ending_edge - starting_edge)/2
+        #type of objects Small Middle Large
+        self.type = None
 
     def calculate_width(self):
+        """[summary]
+        Calculate the width of the object
+        Returns:
+            [type] -- [description]
+        """
+
         width = (self.distance *
                  math.tan(self.ending_edge - self.starting_edge)/2)*2
-        # if width < 3:
-        #     return 0
-        # if width > 25:
-        #     return 0
+        if(width >0 and width < 12):
+            self.type = "small"
+
+        elif(width >= 12 <= 20):
+            self.type = "middle"
+        print("Distance is {} Starting edge is {} Ending edge is {} Width is {} Type:{}".format(
+            self.distance,math.degrees(self.starting_edge),math.degrees(self.ending_edge),width,
+            self.type
+        ))
         return width
 
     def calculate_the_x_y_pos(self,angle,x_pos,y_pos):
+        """[summary]
+        Calculate the x and y position for the object
+        Arguments:
+            angle {[type]} -- [description]
+            x_pos {[type]} -- [description]
+            y_pos {[type]} -- [description]
+        
+        Returns:
+            [type] -- [description]
+        """
+
         dis_from_surface_to_center = self.calculate_width()/2
 
         dis_from_robot_to_center = dis_from_surface_to_center + self.distance
-        angle_from_x_to_center = self.angle + angle
+        angle_from_x_to_center = self.angle + math.radians(angle)
         x = dis_from_robot_to_center * \
-            math.cos(math.radians(angle_from_x_to_center)) + x_pos
+            math.cos(angle_from_x_to_center) + x_pos
         y = dis_from_robot_to_center * \
-            math.sin(math.radians(angle_from_x_to_center)) + y_pos
+            math.sin(angle_from_x_to_center) + y_pos
         return [x, y]
-
-
-class moving_obj:
-    def __init__(self, angle, distance):
-        self.angle = angle
-        self.distance = distance
-
-    def calculate_the_x_y_pos(self):
-        x = math.cos(math.radians(self.angle))*self.distance
-        y = math.sin(math.radians(self.angle))*self.distance
-
-# robot = Robot()
-# robot.calibration()
